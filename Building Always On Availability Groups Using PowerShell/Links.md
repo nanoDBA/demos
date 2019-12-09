@@ -4,6 +4,8 @@ Building Always On Availability Groups Using PowerShell
 
 [PS-AutoLab-Env PowerShellLab config](https://github.com/pluralsight/PS-AutoLab-Env/blob/master/Configurations/PowerShellLab/Instructions.md)
 
+Cluster Resources requires [Create Computer Objects permissions](https://robertsmit.wordpress.com/2012/06/26/cluster-network-name-resource-failed-to-create-its-associated-computer-object-in-domain/)
+
 [Always On Availability Groups Terms And Definitions](https://docs.microsoft.com/en-us/sql/database-engine/availability-groups/windows/always-on-availability-groups-sql-server?view=sql-server-ver15#TermsAndDefinitions)
 
 [Create an Always On availability group using PowerShell](https://docs.microsoft.com/en-us/sql/database-engine/availability-groups/windows/create-an-availability-group-sql-server-powershell?view=sql-server-ver15)
