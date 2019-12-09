@@ -1,5 +1,9 @@
 Building Always On Availability Groups Using PowerShell
 
+https://github.com/pluralsight/PS-AutoLab-Env
+
+https://github.com/pluralsight/PS-AutoLab-Env/blob/master/Configurations/PowerShellLab/Instructions.md
+
 https://docs.microsoft.com/en-us/sql/database-engine/availability-groups/windows/always-on-availability-groups-sql-server?view=sql-server-ver15#TermsAndDefinitions
 
 https://docs.microsoft.com/en-us/sql/database-engine/availability-groups/windows/create-an-availability-group-sql-server-powershell?view=sql-server-ver15
