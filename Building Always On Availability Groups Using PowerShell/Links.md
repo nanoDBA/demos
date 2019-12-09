@@ -8,10 +8,10 @@ Building Always On Availability Groups Using PowerShell
 
 [Create an Always On availability group using PowerShell](https://docs.microsoft.com/en-us/sql/database-engine/availability-groups/windows/create-an-availability-group-sql-server-powershell?view=sql-server-ver15)
 
-https://docs.microsoft.com/en-us/powershell/module/sqlserver/new-sqlavailabilityreplica?view=sqlserver-ps
+[New-SqlAvailabilityReplica cmdlet](https://docs.microsoft.com/en-us/powershell/module/sqlserver/new-sqlavailabilityreplica?view=sqlserver-ps)
 
-https://www.mssqltips.com/sqlservertip/5012/create-and-configure-sql-server-2016-always-on-availability-groups-using-windows-powershell/
+[mssqltips.com Create and Configure SQL Server 2016 Always On Availability Groups using Windows PowerShell](https://www.mssqltips.com/sqlservertip/5012/create-and-configure-sql-server-2016-always-on-availability-groups-using-windows-powershell/)
 
-https://docs.microsoft.com/en-us/sql/database-engine/availability-groups/windows/create-or-configure-an-availability-group-listener-sql-server?view=sql-server-2017#HostRecordTTL
+[Listener HostRecordTTL](https://docs.microsoft.com/en-us/sql/database-engine/availability-groups/windows/create-or-configure-an-availability-group-listener-sql-server?view=sql-server-2017#HostRecordTTL)
 
-https://gallery.technet.microsoft.com/scriptcenter/Tip-of-the-Week-Converting-221aab3f
+[PowerShell: Converting a Here-String to an Array of Strings](https://gallery.technet.microsoft.com/scriptcenter/Tip-of-the-Week-Converting-221aab3f)
