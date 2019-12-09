@@ -10,7 +10,7 @@ Building Always On Availability Groups Using PowerShell
 
 [New-SqlAvailabilityReplica cmdlet](https://docs.microsoft.com/en-us/powershell/module/sqlserver/new-sqlavailabilityreplica?view=sqlserver-ps)
 
-[mssqltips.com Create and Configure SQL Server 2016 Always On Availability Groups using Windows PowerShell](https://www.mssqltips.com/sqlservertip/5012/create-and-configure-sql-server-2016-always-on-availability-groups-using-windows-powershell/)
+[mssqltips.com: Create and Configure SQL Server 2016 Always On Availability Groups using Windows PowerShell](https://www.mssqltips.com/sqlservertip/5012/create-and-configure-sql-server-2016-always-on-availability-groups-using-windows-powershell/)
 
 [Listener HostRecordTTL](https://docs.microsoft.com/en-us/sql/database-engine/availability-groups/windows/create-or-configure-an-availability-group-listener-sql-server?view=sql-server-2017#HostRecordTTL)
 
