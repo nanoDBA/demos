@@ -257,6 +257,7 @@ Start-Transcript `$TranscriptPath ;
         Write-Output "Done." | Out-String | Write-Host -ForegroundColor Yellow
     }
 }
+# Jeffrey Snover wrote Get-LastReboot - wrapping it in a function
 # https://www.powershellgallery.com/packages/get-lastreboot
 function Get-LastReboot {
     param(
