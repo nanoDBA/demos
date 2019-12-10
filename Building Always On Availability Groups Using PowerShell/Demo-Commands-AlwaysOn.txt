@@ -17,7 +17,7 @@ Start-DbaAgentJob -SqlInstance $primaryReplica -Job 'DatabaseBackup - USER_DATAB
 . \\win10\AlwaysOn\04-AlwaysOn-Create-Listener.ps1
 Get-WindowsFeature RSAT-DNS-Server | Add-WindowsFeature
 Import-Module DnsServer
-Add-DnsServerResourceRecordCName -Name "$agListenerCNAME" -HostNameAlias "$($agListenerShortName).$($domain)" -ZoneName "$($domain)" -TimeToLive 1800 -ComputerName DOM1
+Add-DnsServerResourceRecordCName -Name "$agListenerCNAME" -HostNameAlias "$($agListenerShortName).$($domain)" -ZoneName "$($domain)" -TimeToLive 1800 -ComputerName $dnsServer
 . \\win10\AlwaysOn\05-Change-Cluster-Parameters.ps1
 Resolve-DbaNetworkName $agListenerShortName
 Resolve-DbaNetworkName $agListenerCNAME

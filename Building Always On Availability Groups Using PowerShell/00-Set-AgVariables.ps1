@@ -13,6 +13,7 @@ Import-Module sqlserver
 
 #variables to be populated
 $domain = "Company.Pri" #Domain DNS sufix
+$dnsServer = "DOM1" # used to create the CNAME
 $primaryReplica = "SRV1"
 $sqlEngineServiceAccount = "COMPANY\ArtD"
 $primarySqlInstanceSMO = Get-Item "SQLSERVER:\SQL\$($primaryReplica)\Default"
