@@ -1,25 +1,25 @@
 ﻿. \\win10\AlwaysOn\00-Set-AgVariables.ps1
 . \\win10\AlwaysOn\01-Enable-SqlAlwaysOn.ps1
 . \\win10\AlwaysOn\02-AlwaysOn-Creating-Endpoints.ps1
-New-DbaDatabase -SqlInstance SRV1 -Name MyDatabase
-New-DbaDatabase -SqlInstance SRV1 -Name YourDatabase
+New-DbaDatabase -SqlInstance $primaryReplica -Name MyDatabase
+New-DbaDatabase -SqlInstance $primaryReplica -Name YourDatabase
 . \\win10\AlwaysOn\03-Create-Availability-Groups.ps1
 # Why did creation of the AG fail?
-Install-DbaMaintenanceSolution -SqlInstance SRV1, SRV2 -Database master -BackupLocation C:\SqlData -CleanupTime 168 -InstallJobs -ReplaceExisting
-Get-DbaService SRV1, SRV2 -Type Agent 
-Get-DbaService SRV1, SRV2 -Type Agent | Start-DbaService
-Get-DbaService SRV1, SRV2 -Type Agent 
-Get-DbaAgentJob SRV1 | select name
-Start-DbaAgentJob -SqlInstance SRV1 -Job 'DatabaseBackup - USER_DATABASES - FULL'
-Get-DbaAgentJob -SqlInstance SRV1 -Job 'DatabaseBackup - USER_DATABASES - FULL' | Select-Object SQLInstance, Name, OwnerLoginName, Enabled, LastRunDate, LastRunOutCome, NextRunDate, CurrentRunStatus | Format-Table
-Start-DbaAgentJob -SqlInstance SRV1 -Job 'DatabaseBackup - USER_DATABASES - LOG'
+Install-DbaMaintenanceSolution -SqlInstance $primaryReplica, $secondaryReplica -Database master -BackupLocation C:\SqlData -CleanupTime 168 -InstallJobs -ReplaceExisting
+Get-DbaService $primaryReplica, $secondaryReplica -Type Agent 
+Get-DbaService $primaryReplica, $secondaryReplica -Type Agent | Start-DbaService
+Get-DbaService $primaryReplica, $secondaryReplica -Type Agent 
+Get-DbaAgentJob $primaryReplica | select name
+Start-DbaAgentJob -SqlInstance $primaryReplica -Job 'DatabaseBackup - USER_DATABASES - FULL'
+Get-DbaAgentJob -SqlInstance $primaryReplica -Job 'DatabaseBackup - USER_DATABASES - FULL' | Select-Object SQLInstance, Name, OwnerLoginName, Enabled, LastRunDate, LastRunOutCome, NextRunDate, CurrentRunStatus | Format-Table
+Start-DbaAgentJob -SqlInstance $primaryReplica -Job 'DatabaseBackup - USER_DATABASES - LOG'
 . \\win10\AlwaysOn\03-Create-Availability-Groups.ps1
 . \\win10\AlwaysOn\04-AlwaysOn-Create-Listener.ps1
 Get-WindowsFeature RSAT-DNS-Server | Add-WindowsFeature
 Import-Module DnsServer
 Add-DnsServerResourceRecordCName -Name "$agListenerCNAME" -HostNameAlias "$($agListenerShortName).$($domain)" -ZoneName "$($domain)" -TimeToLive 1800 -ComputerName DOM1
 . \\win10\AlwaysOn\05-Change-Cluster-Parameters.ps1
-Resolve-DbaNetworkName l-srv
-Resolve-DbaNetworkName srv
+Resolve-DbaNetworkName $agListenerShortName
+Resolve-DbaNetworkName $agListenerCNAME
 . \\win10\AlwaysOn\06-Test-Listener-Failover.ps1
 . \\win10\AlwaysOn\07-Test-Listener-Failback.ps1
