@@ -1,4 +1,5 @@
 Building Always On Availability Groups Using PowerShell
+-------------------------------------------------------
 
 [PS-AutoLab-Env module for creating your own lab environment](https://github.com/pluralsight/PS-AutoLab-Env)
 
