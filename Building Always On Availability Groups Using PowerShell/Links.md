@@ -15,7 +15,7 @@ Building Always On Availability Groups Using PowerShell
 
 [mssqltips.com: Create and Configure SQL Server 2016 Always On Availability Groups using Windows PowerShell](https://www.mssqltips.com/sqlservertip/5012/create-and-configure-sql-server-2016-always-on-availability-groups-using-windows-powershell/)
 
-[SQL Server Maintenance Solution(Ola HallenGren)](https://ola.hallengren.com/)
+[SQL Server Maintenance Solution(Ola Hallengren)](https://ola.hallengren.com/)
 
 [Listener HostRecordTTL](https://docs.microsoft.com/en-us/sql/database-engine/availability-groups/windows/create-or-configure-an-availability-group-listener-sql-server?view=sql-server-2017#HostRecordTTL)
 
