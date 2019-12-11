@@ -40,15 +40,43 @@ SetBestPracticePowerPlan=1`
 UpdatePSHelp=0`
 }
 Install-DBAPreReq @splatting -ConfirmExecute 1
-#check Windows firewall settings - should be enabled but profiles can be disabledget-service MpsSvcget-service MpsSvc | Set-Service -StartupType Automaticget-service MpsSvc | Start-Serviceget-service MpsSvcGet-NetFirewallProfile | select name, Enabled  | Format-Table; Get-NetFirewallProfile | Set-NetFirewallProfile -Enabled False;Get-NetFirewallProfile | select name, Enabled  | Format-Table;
-Install-Module betterCredentials -AllowClobber -Confirm:$false -ForceImport-Module betterCredentials
+#check Windows firewall settings - should be enabled but profiles can be disabled
+get-service MpsSvc
+get-service MpsSvc | Set-Service -StartupType Automatic
+get-service MpsSvc | Start-Service
+get-service MpsSvc
+Get-NetFirewallProfile | select name, Enabled  | Format-Table; Get-NetFirewallProfile | Set-NetFirewallProfile -Enabled False;
+Get-NetFirewallProfile | select name, Enabled  | Format-Table;
+Install-Module betterCredentials -AllowClobber -Confirm:$false -Force
+Import-Module betterCredentials
 $svcUserAccount = 'COMPANY\ArtD'`
 $agtUserAccount = 'COMPANY\ArtD'
 Get-Credential $svcUserAccount -Store -Title "SQL Server User Account"
 $SQLsvcPASSWORD = (Get-Credential $svcUserAccount).GetNetworkCredential().Password
-Get-Credential $agtUserAccount -Store -Title "SQL Agent User Account"$SQLagtPASSWORD = (Get-Credential $agtUserAccount).GetNetworkCredential().Password
-##Install SQL Server 2017 - change account names and paths as needed$SQL_Install_Media_Volume_Letter = (Mount-DiskImage -ImagePath "\\WIN10\AlwaysOn\en_sql_server_2019_developer_x64_dvd_a2acad59.iso" -PassThru | Get-Volume).DriveLetter ;#<# SQL Server 2017 Enterprise Quiet install w/randomized sa password#>## "/Q runs in a quiet mode without any user interface."# "The /QS parameter shows progress through the UI, but does not accept any input."#<# Generate Password #>$lengthPassword = 37;$Password = ([char[]]([char]48..[char]57) + [char[]]([char]65..[char]90) + ([char[]]([char]97..[char]122)) <# + 0..9 #> | sort {Get-Random})[0..$($lengthPassword - 1)] -join ''; $Password | clip.exe ;#Write-Output $Password
-$cred = [PSCredential]::new('sa',$($Password | ConvertTo-SecureString -AsPlainText -Force))<# persist SA cred #>$cred | Get-Credential -store#$SetupEXEPath = "$($SQL_Install_Media_Volume_Letter.ToString().Trim()):\setup.exe" ;#$SetupString = $SetupEXEPath + " /Action=install /Q /IACCEPTSQLSERVERLICENSETERMS /CONFIGURATIONFILE='\\WIN10\AlwaysOn\SQL2017_SRV1,SRV2_ConfigurationFile.ini' /TCPENABLED=1 /INDICATEPROGRESS='True'  /SECURITYMODE='SQL' /SQLSVCPASSWORD=`'$($SQLsvcPASSWORD)`' /AGTSVCPASSWORD=`'$($SQLagtPASSWORD)`' /SECURITYMODE='SQL' /SAPWD=`'$($Password)`'" ;#<# Throwing in the towel for fun password characters like ' " & `  #>$SetupString | Invoke-Expression ;
-<# Verify Install #>$results = "localhost" | Invoke-SqlCmd -database master -Query "SELECT @@SERVERNAME [InstanceName], db_name() [db], getdate() CurrentTime, CAST((datediff(mi, login_time, getdate())/60.0) AS DECIMAL (16,1)) [hours uptime], '<-^ hours uptime' [__], (datediff(mi, login_time, getdate())/60/24) [days uptime], '<-^ days uptime' [___], @@VERSION as Version FROM master..sysprocesses WHERE spid = 1; " -Verbose -OutputSqlErrors $true -IncludeSqlUserErrors -AbortOnError;  $results | Format-ListGet-DbaService localhost | sort ComputerName, StartName | ft ComputerName, ServiceType, ServiceName, StartName, State, Startmode, BinaryPath -AutoSizeInstall-Module PendingReboot -Force; Test-PendingReboot
+Get-Credential $agtUserAccount -Store -Title "SQL Agent User Account"
+$SQLagtPASSWORD = (Get-Credential $agtUserAccount).GetNetworkCredential().Password
+##Install SQL Server 2017 - change account names and paths as needed
+$SQL_Install_Media_Volume_Letter = (Mount-DiskImage -ImagePath "\\WIN10\AlwaysOn\en_sql_server_2019_developer_x64_dvd_a2acad59.iso" -PassThru | Get-Volume).DriveLetter ;
+#<# SQL Server 2017 Enterprise Quiet install w/randomized sa password#>
+#
+# "/Q runs in a quiet mode without any user interface."
+# "The /QS parameter shows progress through the UI, but does not accept any input."
+#
+<# Generate Password #>$lengthPassword = 37;$Password = ([char[]]([char]48..[char]57) + [char[]]([char]65..[char]90) + ([char[]]([char]97..[char]122)) <# + 0..9 #> | sort {Get-Random})[0..$($lengthPassword - 1)] -join ''; $Password | clip.exe ;#Write-Output $Password
+$cred = [PSCredential]::new('sa',$($Password | ConvertTo-SecureString -AsPlainText -Force))
+<# persist SA cred #>$cred | Get-Credential -store
+
+#
+
+$SetupEXEPath = "$($SQL_Install_Media_Volume_Letter.ToString().Trim()):\setup.exe" ;
+#
+$SetupString = $SetupEXEPath + " /Action=install /Q /IACCEPTSQLSERVERLICENSETERMS /CONFIGURATIONFILE='\\WIN10\AlwaysOn\SQL2019_SRV1,SRV2_ConfigurationFile.ini' /TCPENABLED=1 /INDICATEPROGRESS='True'  /SECURITYMODE='SQL' /SQLSVCPASSWORD=`'$($SQLsvcPASSWORD)`' /AGTSVCPASSWORD=`'$($SQLagtPASSWORD)`' /SECURITYMODE='SQL' /SAPWD=`'$($Password)`'" ;
+#<# Throwing in the towel for fun password characters like ' " & `  #>
+$SetupString | Invoke-Expression ;
+<# Verify Install #>$results = "localhost" | Invoke-SqlCmd -database master -Query "SELECT @@SERVERNAME [InstanceName], db_name() [db], getdate() CurrentTime, CAST((datediff(mi, login_time, getdate())/60.0) AS DECIMAL (16,1)) [hours uptime], '<-^ hours uptime' [__], (datediff(mi, login_time, getdate())/60/24) [days uptime], '<-^ days uptime' [___], @@VERSION as Version FROM master..sysprocesses WHERE spid = 1; " -Verbose -OutputSqlErrors $true -IncludeSqlUserErrors -AbortOnError;  $results | Format-List
+
+Get-DbaService localhost | sort ComputerName, StartName | ft ComputerName, ServiceType, ServiceName, StartName, State, Startmode, BinaryPath -AutoSize
+
+Install-Module PendingReboot -Force; Test-PendingReboot
 (Get-PSReadlineOption).HistorySavePath
 copy $(Get-PSReadlineOption).HistorySavePath '\\win10\c$\Users\artd\Documents\AlwaysOn\SRV1-ConsoleHost_history.txt'
