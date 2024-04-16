@@ -1,0 +1,1 @@
+<# #3a Restore DB serially  #> $instances | ForEach { Restore-DbaDatabase -SqlInstance $_ -Path /tmp/backup/pubs.bak } # | Format-Table 
