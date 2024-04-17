@@ -1,0 +1,846 @@
+**********************
+PowerShell transcript start
+Start time: 20240416184936
+Username: DomainName\UserName
+RunAs User: DomainName\UserName
+Configuration Name: 
+Machine: LAPPYXV (Microsoft Windows NT 10.0.22621.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -WorkingDirectory ~
+Process ID: 3492
+PSVersion: 7.4.2
+PSEdition: Core
+GitCommitId: 7.4.2
+OS: Microsoft Windows 10.0.22621
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\UserName\OneDrive\##Presentations\2024\Parallel DBA Tasks from the Command Line Using PowerShell\2024-04-16__18-49-36_nanoDBA_Parallel DBA Tasks from the Command Line Using PowerShell.txt
+[48;5;m0150CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.032983406:49:36 PM
+
+>
+PS>. '.\#00 Create-Containers.ps1' -numContainers 4
+>> CommandInvocation(Out-Default): "Out-Default"
+Container sql01 created on port 1401.
+Container sql02 created on port 1402.
+Container sql03 created on port 1403.
+Container sql04 created on port 1404.
+All containers started.
+[48;5;m0151CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:05.949080406:49:53 PM
+
+>
+PS><# #0 object creation RSJob vs PSJobs 
+https://learn-powershell.net/2015/03/31/introducing-poshrsjob-as-an-alternative-to-powershell-jobs/  
+#>
+Write-Verbose "Begin RSJobs Test" -Verbose
+$Test = 42
+(Measure-Command {
+    $results = 1..5|Start-RSJob -Name {"TEST_$($_)"} -ScriptBlock {
+        Param($Object)
+        $DebugPreference = 'Continue'
+        $PSBoundParameters.GetEnumerator() | ForEach {
+            Write-Debug $_
+        }
+        Write-Verbose "Creating object" -Verbose
+        New-Object PSObject -Property @{
+            Object=$Object
+            Test=$Using:Test
+        }
+    }
+}).TotalSeconds
+Write-Verbose "End RSJobs Test" -Verbose
+# Get-RSJob | Receive-RSJob
+
+Write-Verbose "Begin PSJobs Test" -Verbose
+$Test = 42
+(Measure-Command {
+    1..5 | ForEach {
+        Start-Job -Name "TEST_$($_)" -ScriptBlock {
+            Param($Object)
+            $DebugPreference = 'Continue'
+            $PSBoundParameters.GetEnumerator() | ForEach {
+                Write-Debug $_ # display the key-value pairs of the hashtable in the debug stream by using Write-Debug - example: DEBUG: Key = Object, Value = 1
+            }
+            Write-Verbose "Creating object" -Verbose
+            New-Object PSObject -Property @{
+                Object = $Object
+                Test   = $Using:Test
+            }
+        } -ArgumentList $_
+    }
+}).TotalSeconds
+Write-Verbose "End PSJobs Test" -Verbose
+# Get-Job | Receive-Job
+
+
+>> CommandInvocation(Out-Default): "Out-Default"
+VERBOSE: Begin RSJobs Test
+PS>ParameterBinding(Out-Default): name="InputObject"; value="0.390133"
+0.390133
+VERBOSE: End RSJobs Test
+VERBOSE: Begin PSJobs Test
+PS>ParameterBinding(Out-Default): name="InputObject"; value="3.8799274"
+3.8799274
+VERBOSE: End PSJobs Test
+[48;5;m0152CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:04.302579606:54:16 PM
+
+>
+PS>#0 object creation ForEach -Parallel
+Write-Verbose "Begin ForEach-Parallel Test" -Verbose
+$Test = 42
+
+(Measure-Command {
+    $results = 1..5 | ForEach-Object -Parallel {
+        # Using Invoke-Command instead of Start-Job to avoid the overhead of creating a new runspace
+        Invoke-Command -ScriptBlock {
+            param($Object, $TestValue) # $Object is the current pipeline object, $TestValue is the value of $using:Test
+            $DebugPreference = 'Continue'
+            Write-Debug "Processing object $Object with test value $TestValue"
+            Write-Verbose "Creating object" -Verbose
+            New-Object PSObject @{
+                Object = $Object
+                Test   = $TestValue
+            }
+        } -ArgumentList $_, $using:Test
+    }
+}).TotalSeconds
+
+Write-Verbose "End ForEach -Parallel Test" -Verbose
+>> CommandInvocation(Out-Default): "Out-Default"
+VERBOSE: Begin ForEach-Parallel Test
+PS>ParameterBinding(Out-Default): name="InputObject"; value="0.3159938"
+0.3159938
+VERBOSE: End ForEach -Parallel Test
+[48;5;m0153CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.343118506:56:14 PM
+
+>
+PS>$instances = $contNames
+
+$results = foreach ($sqlInstance in $instances) {
+Get-DbaBuild -SqlInstance $sqlInstance
+}
+$results | Format-Table
+>> CommandInvocation(Out-Default): "Out-Default"
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatStartData"
+
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.GroupStartData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.GroupEndData"
+SqlInstance Build     NameLevel SPLevel CULevel KBLevel BuildLevel SupportedUntil      MatchType Warning
+----------- -----     --------- ------- ------- ------- ---------- --------------      --------- -------
+sql01       16.0.4115 2022      RTM     CU12    5033663 16.0.4115  2033-01-11 00:00:00 Exact
+sql02       16.0.4115 2022      RTM     CU12    5033663 16.0.4115  2033-01-11 00:00:00 Exact
+sql03       16.0.4115 2022      RTM     CU12    5033663 16.0.4115  2033-01-11 00:00:00 Exact
+sql04       16.0.4115 2022      RTM     CU12    5033663 16.0.4115  2033-01-11 00:00:00 Exact
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEndData"
+
+[48;5;m0154CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.691235606:58:23 PM
+
+>
+PS>#1a Get-DbaErrorLog serially for multiple instances
+$instances = $contNames
+$paramHash = @{
+
+After = (Get-Date).AddDays((-50) )
+# Text = "A fatal error occurred while reading the input stream from the network. The session will be terminated (input error: 10054, output error: 0)."
+Text = "build"
+#Text = "err"
+}
+
+$results = foreach($sqlInstance in $instances) {
+
+   Get-DbaErrorLog @paramHash -SqlInstance $sqlInstance `
+}
+Write-Output "`$results.Count: $($results.Count)"
+#multiple key sort #with one unique column(commented out uniqueness)
+$results | Sort-Object -Property @{e={$_.SqlInstance}}, @{e={$_.LogDate}} ` <#@{e={$_.Text}} -Unique #>
+ | Select-Object SqlInstance, LogDate, Text, Source `
+ | Format-Table -Wrap
+>> CommandInvocation(Out-Default): "Out-Default"
+PS>ParameterBinding(Out-Default): name="InputObject"; value="$results.Count: 4"
+$results.Count: 4
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatStartData"
+
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.GroupStartData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.GroupEndData"
+SqlInstance LogDate             Text
+----------- -------             ----                                                                                         
+sql01       2024-04-16 22:50:06 The resource database build version is 16.00.4115. This is an informational message only. No
+                                user action is required.
+sql02       2024-04-16 22:50:06 The resource database build version is 16.00.4115. This is an informational message only. No
+                                user action is required.
+sql03       2024-04-16 22:50:06 The resource database build version is 16.00.4115. This is an informational message only. No
+                                user action is required.
+sql04       2024-04-16 22:50:06 The resource database build version is 16.00.4115. This is an informational message only. No
+                                user action is required.
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEndData"
+
+[48;5;m0155CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:11.388417806:59:44 PM
+
+>
+PS>$sqlCred
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSCredential"
+
+Target        : MicrosoftPowerShell:user=sa
+TargetAlias   : 
+Type          : Generic
+Persistence   : Enterprise
+Description   : 
+LastWriteTime : 2024-03-18 21:53:55
+UserName      : sa
+Password      : System.Security.SecureString
+
+[48;5;m0156CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.022248907:05:40 PM
+
+>
+PS>#1b Get-DbaErrorLog in parallel for multiple instances
+$sqlInstances = $instances
+Write-Output "`$instances count`: $($instances.count)"
+
+Get-RSJob | Stop-RSJob
+Get-RSJob | Remove-RSJob # clear out any existing jobs
+
+$numberParallelThreads = 4
+
+$results = Start-RSJob -Throttle $numberParallelThreads -ModulesToImport dbatools, BetterCredentials -InputObject $sqlInstances -ScriptBlock { 
+  Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true # Set certs to be trusted
+  $sqlCred = BetterCredentials\Get-Credential sa
+
+  $PSDefaultParameterValues['*-Dba*:SqlCredential'] = $sqlCred
+  $PSDefaultParameterValues['*-Dba*:SourceSqlCredential'] = $sqlCred
+  $PSDefaultParameterValues['*-Dba*:DestinationSqlCredential'] = $sqlCred
+
+  $sqlInstance = $_
+
+  $paramHash = @{
+    SqlInstance   = $sqlInstance
+    SqlCredential = $sqlCred
+    After         = (Get-Date).AddHours((-50))
+    Text          = "build" #"Error: 50000"
+  }
+
+  Get-DbaErrorLog @paramHash
+} | Wait-RSJob -ShowProgress | Receive-RSJob
+
+Write-Output "`$results.Count: $($results.Count)"
+#multiple key sort #with one unique column(commented out uniqueness)
+$results | Sort-Object -Property @{e={$_.SqlInstance}}, @{e={$_.LogDate}} | Select-Object SqlInstance, LogDate, Text, Source | ogv #ft -Wrap
+Get-Date -Format o
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="$instances count: 4"
+$instances count: 4
+PS>ParameterBinding(Out-Default): name="InputObject"; value="$results.Count: 4"
+$results.Count: 4
+PS>ParameterBinding(Out-Default): name="InputObject"; value="2024-04-16T19:14:01.8637315-04:00"
+2024-04-16T19:14:01.8637315-04:00
+[48;5;m0157CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:07.811375707:14:02 PM
+
+>
+PS>$sqlInstances
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1401"
+localhost:1401
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1402"
+localhost:1402
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1403"
+localhost:1403
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1404"
+localhost:1404
+[48;5;m0158CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.019607907:14:50 PM
+
+>
+PS>Get-Job
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSEventJob"
+
+Id     Name            PSJobTypeName   State         HasMoreData     Location             Command
+--     ----            -------------   -----         -----------     --------             -------
+1      dbatools_Timer                  Running       True                                  Get-PSSession | Where-O…
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSEventJob"
+4      PowerShell.Exi…                 NotStarted    False                                …
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSRemotingJob"
+91     TEST_1          BackgroundJob   Completed     True            localhost            …
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSRemotingJob"
+93     TEST_2          BackgroundJob   Completed     True            localhost            …
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSRemotingJob"
+95     TEST_3          BackgroundJob   Completed     True            localhost            …
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSRemotingJob"
+97     TEST_4          BackgroundJob   Completed     True            localhost            …
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSRemotingJob"
+99     TEST_5          BackgroundJob   Completed     True            localhost            …
+
+[48;5;m0159CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.069783107:17:24 PM
+
+>
+PS>Get-Job 91
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSRemotingJob"
+
+Id     Name            PSJobTypeName   State         HasMoreData     Location             Command
+--     ----            -------------   -----         -----------     --------             -------
+91     TEST_1          BackgroundJob   Completed     True            localhost            …
+
+[48;5;m0160CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.024923607:17:40 PM
+
+>
+PS>Get-Job 91 | Receive-Job
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="@{Test=42; Object=1; PSComputerName=localhost; RunspaceId=f27f2995-88cf-4c52-bebc-4dde435a7569; PSShowComputerName=False}"
+
+Test       : 42
+Object     : 1
+RunspaceId : f27f2995-88cf-4c52-bebc-4dde435a7569
+
+[48;5;m0161CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.036218007:17:54 PM
+
+>
+PS>Get-Job 91 | Stop-Job
+>> CommandInvocation(Out-Default): "Out-Default"
+[48;5;m0162CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.036586207:19:49 PM
+
+>
+PS>Get-Job 91
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSRemotingJob"
+
+Id     Name            PSJobTypeName   State         HasMoreData     Location             Command
+--     ----            -------------   -----         -----------     --------             -------
+91     TEST_1          BackgroundJob   Completed     True            localhost            …
+
+[48;5;m0163CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.030224107:19:53 PM
+
+>
+PS>Get-Job 91 | Remove-Job
+>> CommandInvocation(Out-Default): "Out-Default"
+[48;5;m0164CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.021062407:20:01 PM
+
+>
+PS>Get-Job 91
+>> CommandInvocation(Out-Default): "Out-Default"
+Get-Job: The command cannot find a job with the job ID 91. Verify the value of the Id parameter and then try the command again.
+>> ParameterBinding(Out-Default): name="InputObject"; value="The command cannot find a job with the job ID 91. Verify the value of the Id parameter and then try the command again."
+Get-Job: The command cannot find a job with the job ID 91. Verify the value of the Id parameter and then try the command again.
+[48;5;m0165CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.348624607:20:04 PM
+
+>
+PS>Get-Job
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSEventJob"
+
+Id     Name            PSJobTypeName   State         HasMoreData     Location             Command
+--     ----            -------------   -----         -----------     --------             -------
+1      dbatools_Timer                  Running       True                                  Get-PSSession | Where-O…
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSEventJob"
+4      PowerShell.Exi…                 NotStarted    False                                …
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSRemotingJob"
+93     TEST_2          BackgroundJob   Completed     True            localhost            …
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSRemotingJob"
+95     TEST_3          BackgroundJob   Completed     True            localhost            …
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSRemotingJob"
+97     TEST_4          BackgroundJob   Completed     True            localhost            …
+>> ParameterBinding(Out-Default): name="InputObject"; value="System.Management.Automation.PSRemotingJob"
+99     TEST_5          BackgroundJob   Completed     True            localhost            …
+
+[48;5;m0166CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.051674407:20:08 PM
+
+>
+PS>$sqlInstances
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1401"
+localhost:1401
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1402"
+localhost:1402
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1403"
+localhost:1403
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1404"
+localhost:1404
+[48;5;m0167CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.016637507:23:23 PM
+
+>
+PS>$instances
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1401"
+localhost:1401
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1402"
+localhost:1402
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1403"
+localhost:1403
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1404"
+localhost:1404
+[48;5;m0168CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.013517307:23:28 PM
+
+>
+PS><# #3a Restore DB serially  #> $instances | ForEach { Restore-DbaDatabase -SqlInstance $_ -Path /tmp/backup/pubs.bak } `
+| Format-Table 
+>> CommandInvocation(Out-Default): "Out-Default"
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatStartData"
+
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.GroupStartData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.GroupEndData"
+ComputerName InstanceName SqlInstance BackupFile           BackupFilesCount BackupSize CompressedBackupSize Database Owner Da
+                                                                                                                           ta
+                                                                                                                           ba
+                                                                                                                           se
+                                                                                                                           Re
+                                                                                                                           st
+                                                                                                                           or
+                                                                                                                           eT
+                                                                                                                           im
+                                                                                                                           e
+------------ ------------ ----------- ----------           ---------------- ---------- -------------------- -------- ----- --
+localhost    MSSQLSERVER  sql01       /tmp/backup/pubs.bak                1 5.21 MB    5.21 MB              pubs     sa    0…
+localhost    MSSQLSERVER  sql02       /tmp/backup/pubs.bak                1 5.21 MB    5.21 MB              pubs     sa    0…
+localhost    MSSQLSERVER  sql03       /tmp/backup/pubs.bak                1 5.21 MB    5.21 MB              pubs     sa    0…
+localhost    MSSQLSERVER  sql04       /tmp/backup/pubs.bak                1 5.21 MB    5.21 MB              pubs     sa    0…
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEndData"
+
+[48;5;m0169CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:08.866337607:23:49 PM
+
+>
+PS># Drops parallel
+#   using PoshRSJob module
+Write-Output "`$instances count`: $($instances.count)"
+
+Get-RSJob | Stop-RSJob; Get-RSJob | Remove-RSJob # stop & remove any existing jobs
+
+### 
+$numberParallelThreads = 4
+
+$resultsDrops = Start-RSJob -Throttle $numberParallelThreads -ModulesToImport dbatools -InputObject $instances -Verbose -ScriptBlock { 
+
+    $sqlCred = BetterCredentials\Get-Credential sa
+    <# Set certs to be trusted #>Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true
+
+    $sqlInstance = $_
+    $database = 'master'
+    Write-Verbose "$sqlInstance..."
+    Remove-DbaDatabase -SqlInstance $_ -Database pubs -Confirm:$false `
+    -SqlCredential $sqlCred -Verbose
+
+} | Wait-RSJob -ShowProgress <#-Verbose#> | Receive-RSJob <#-Verbose#>
+
+Write-Output "$(($resultsGenPseudoErrors).count) results"
+$resultsDrops | Format-Table
+Get-Date -Format o
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="$instances count: 4"
+$instances count: 4
+VERBOSE: Displaying PSBoundParameters
+VERBOSE: [Throttle, 4]
+VERBOSE: [ModulesToImport, System.String[]]
+VERBOSE: [InputObject, System.Object[]]
+VERBOSE: [Verbose, True]
+VERBOSE: [ScriptBlock,  
+
+    $sqlCred = BetterCredentials\Get-Credential sa
+    <# Set certs to be trusted #>Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true
+
+    $sqlInstance = $_
+    $database = 'master'
+    Write-Verbose "$sqlInstance..."
+    Remove-DbaDatabase -SqlInstance $_ -Database pubs -Confirm:$false `
+    -SqlCredential $sqlCred -Verbose
+
+]
+VERBOSE: Creating default Job Name
+VERBOSE: PowerShell Version: 7
+VERBOSE: Creating new runspacepool <41f9ed82-9cf1-4029-aa61-744e87e61c01>
+VERBOSE: Incrementing job ID
+VERBOSE: Using localhost:1401 as pipeline variable
+VERBOSE: Checking for Using: variables
+VERBOSE: Checking for ArgumentList
+VERBOSE: Invoking Runspace
+VERBOSE: Determining Job Name
+VERBOSE: Adding RSJob to Jobs queue
+VERBOSE: Display RSJob
+VERBOSE: Incrementing job ID
+VERBOSE: Using localhost:1402 as pipeline variable
+VERBOSE: Checking for Using: variables
+VERBOSE: Checking for ArgumentList
+VERBOSE: Invoking Runspace
+VERBOSE: Determining Job Name
+VERBOSE: Adding RSJob to Jobs queue
+VERBOSE: Display RSJob
+VERBOSE: Incrementing job ID
+VERBOSE: Using localhost:1403 as pipeline variable
+VERBOSE: Checking for Using: variables
+VERBOSE: Checking for ArgumentList
+VERBOSE: Invoking Runspace
+VERBOSE: Determining Job Name
+VERBOSE: Adding RSJob to Jobs queue
+VERBOSE: Display RSJob
+VERBOSE: Incrementing job ID
+VERBOSE: Using localhost:1404 as pipeline variable
+VERBOSE: Checking for Using: variables
+VERBOSE: Checking for ArgumentList
+VERBOSE: Invoking Runspace
+VERBOSE: Determining Job Name
+VERBOSE: Adding RSJob to Jobs queue
+VERBOSE: Display RSJob
+PS>ParameterBinding(Out-Default): name="InputObject"; value="4 results"
+4 results
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatStartData"
+
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.GroupStartData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.GroupEndData"
+ComputerName InstanceName SqlInstance Database Status
+------------ ------------ ----------- -------- ------
+localhost    MSSQLSERVER  sql01       pubs     Dropped
+localhost    MSSQLSERVER  sql02       pubs     Dropped
+localhost    MSSQLSERVER  sql03       pubs     Dropped
+localhost    MSSQLSERVER  sql04       pubs     Dropped
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEndData"
+
+PS>ParameterBinding(Out-Default): name="InputObject"; value="2024-04-16T19:24:12.0677345-04:00"
+2024-04-16T19:24:12.0677345-04:00
+[48;5;m0170CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:02.759696507:24:12 PM
+
+>
+PS>Get-RSJob
+>> CommandInvocation(Out-Default): "Out-Default"
+PS>ParameterBinding(Out-Default): name="InputObject"; value="RSJob"
+
+Id       Name                 State           HasMoreData  HasErrors    Command
+--       ----                 -----           -----------  ---------    -------
+95       Job95                Completed       False        False         …
+>> ParameterBinding(Out-Default): name="InputObject"; value="RSJob"
+96       Job96                Completed       False        False         …
+>> ParameterBinding(Out-Default): name="InputObject"; value="RSJob"
+97       Job97                Completed       False        False         …
+>> ParameterBinding(Out-Default): name="InputObject"; value="RSJob"
+98       Job98                Completed       False        False         …
+
+[48;5;m0171CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.107613507:25:44 PM
+
+>
+PS>Get-RSJob 97 | Receive-RSJob
+>> CommandInvocation(Out-Default): "Out-Default"
+PS>ParameterBinding(Out-Default): name="InputObject"; value="@{ComputerName=localhost; InstanceName=MSSQLSERVER; SqlInstance=sql03; Database=pubs; Status=Dropped}"
+
+ComputerName : localhost
+InstanceName : MSSQLSERVER
+SqlInstance  : sql03
+Database     : pubs
+Status       : Dropped
+
+[48;5;m0172CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.049643407:26:16 PM
+
+>
+PS>## 3b # Restores parallel
+     #  using PoshRSJob module
+Write-Output "`$instances count`: $($instances.count)"
+
+Get-RSJob | Stop-RSJob
+Get-RSJob | Remove-RSJob # stop & remove any existing jobs
+
+### 
+$numberParallelThreads = 4
+
+$resultsRestore = Start-RSJob -Throttle $numberParallelThreads -ModulesToImport dbatools -InputObject $instances <#-Verbose#> -ScriptBlock { 
+
+    $sqlCred = BetterCredentials\Get-Credential sa
+    <# Set certs to be trusted #>Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true
+
+    $sqlInstance = $_
+    $database = 'master'
+    Write-Verbose "$sqlInstance..."
+    Restore-DbaDatabase -SqlInstance $sqlInstance `
+    -SqlCredential $sqlCred `
+    -Path /tmp/backup/pubs.bak #-Verbose
+
+} | Wait-RSJob -ShowProgress <#-Verbose#> | Receive-RSJob <#-Verbose#>
+
+Write-Output "$(($resultsGenPseudoErrors).count) results"
+$resultsRestore | Format-Table
+Get-Date -Format o
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="$instances count: 4"
+$instances count: 4
+PS>ParameterBinding(Out-Default): name="InputObject"; value="4 results"
+4 results
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatStartData"
+
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.GroupStartData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEntryData"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.GroupEndData"
+ComputerName InstanceName SqlInstance BackupFile           BackupFilesCount BackupSize CompressedBackupSize Database Owner Da
+                                                                                                                           ta
+                                                                                                                           ba
+                                                                                                                           se
+                                                                                                                           Re
+                                                                                                                           st
+                                                                                                                           or
+                                                                                                                           eT
+                                                                                                                           im
+                                                                                                                           e
+------------ ------------ ----------- ----------           ---------------- ---------- -------------------- -------- ----- --
+localhost    MSSQLSERVER  sql01       /tmp/backup/pubs.bak                1 5.21 MB    5.21 MB              pubs     sa    0…
+localhost    MSSQLSERVER  sql02       /tmp/backup/pubs.bak                1 5.21 MB    5.21 MB              pubs     sa    0…
+localhost    MSSQLSERVER  sql03       /tmp/backup/pubs.bak                1 5.21 MB    5.21 MB              pubs     sa    0…
+localhost    MSSQLSERVER  sql04       /tmp/backup/pubs.bak                1 5.21 MB    5.21 MB              pubs     sa    0…
+>> ParameterBinding(Out-Default): name="InputObject"; value="Microsoft.PowerShell.Commands.Internal.Format.FormatEndData"
+
+PS>ParameterBinding(Out-Default): name="InputObject"; value="2024-04-16T19:29:03.8493454-04:00"
+2024-04-16T19:29:03.8493454-04:00
+[48;5;m0173CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:05.120387707:29:04 PM
+
+>
+PS>#4a sequential sp_LogHunter runs
+
+$results = @(); foreach ($inst in $instances) {
+
+    Write-Output "$inst..."
+    $results += Invoke-DbaQuery -SqlInstance $inst -Database master -Query 'sp_LogHunter'  -AppendServerInstance -MessagesToOutput -QueryTimeout 500
+}
+$results | Out-GridView
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1401..."
+localhost:1401...
+PS>TerminatingError(): "Exception calling "Fill" with "1" argument(s): "Could not find stored procedure 'sp_LogHunter'.""
+>> TerminatingError(): "Exception calling "Fill" with "1" argument(s): "Could not find stored procedure 'sp_LogHunter'.""
+WARNING: [19:31:17][Invoke-DbaQuery] [localhost,1401] Failed during execution | Could not find stored procedure 'sp_LogHunter'.
+PS>TerminatingError(): "System error."
+PS>ParameterBinding(Out-Default): name="InputObject"; value="localhost:1402..."
+localhost:1402...
+PS>TerminatingError(): "Exception calling "Fill" with "1" argument(s): "Could not find stored procedure 'sp_LogHunter'.""
+>> TerminatingError(): "Exception calling "Fill" with "1" argument(s): "Could not find stored procedure 'sp_LogHunter'.""
+WARNING: [19:31:17][Invoke-DbaQuery] [localhost,1402] Failed during execution | Could not find stored procedure 'sp_LogHunter'.
+PS>TerminatingError(): "System error."
+PS>ParameterBinding(Out-Default): name="InputObject"; value="localhost:1403..."
+localhost:1403...
+PS>TerminatingError(): "Exception calling "Fill" with "1" argument(s): "Could not find stored procedure 'sp_LogHunter'.""
+>> TerminatingError(): "Exception calling "Fill" with "1" argument(s): "Could not find stored procedure 'sp_LogHunter'.""
+WARNING: [19:31:17][Invoke-DbaQuery] [localhost,1403] Failed during execution | Could not find stored procedure 'sp_LogHunter'.
+PS>TerminatingError(): "System error."
+PS>ParameterBinding(Out-Default): name="InputObject"; value="localhost:1404..."
+localhost:1404...
+PS>TerminatingError(): "Exception calling "Fill" with "1" argument(s): "Could not find stored procedure 'sp_LogHunter'.""
+>> TerminatingError(): "Exception calling "Fill" with "1" argument(s): "Could not find stored procedure 'sp_LogHunter'.""
+WARNING: [19:31:17][Invoke-DbaQuery] [localhost,1404] Failed during execution | Could not find stored procedure 'sp_LogHunter'.
+PS>TerminatingError(): "System error."
+[48;5;m0174CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.516475507:31:17 PM
+
+>
+PS>$instances = $contNames
+foreach ($inst in $instances) {
+    Write-Output "Creating stored proc sp_LogHunter on $inst..."
+   $sp_LogHunterPath = "$env:USERPROFILE\downloads\Repos\DarlingData\sp_LogHunter\sp_LogHunter.sql"
+   Invoke-DbaQuery -SqlInstance $inst -Database master -InputFile $sp_LogHunterPath  -AppendServerInstance -MessagesToOutput -QueryTimeout 500
+}
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="Creating stored proc sp_LogHunter on localhost:1401..."
+Creating stored proc sp_LogHunter on localhost:1401...
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Creating stored proc sp_LogHunter on localhost:1402..."
+Creating stored proc sp_LogHunter on localhost:1402...
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Creating stored proc sp_LogHunter on localhost:1403..."
+Creating stored proc sp_LogHunter on localhost:1403...
+PS>ParameterBinding(Out-Default): name="InputObject"; value="Creating stored proc sp_LogHunter on localhost:1404..."
+Creating stored proc sp_LogHunter on localhost:1404...
+[48;5;m0175CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.899544207:31:47 PM
+
+>
+PS>#4a sequential sp_LogHunter runs
+
+$results = @(); foreach ($inst in $instances) {
+
+    Write-Output "$inst..."
+    $results += Invoke-DbaQuery -SqlInstance $inst -Database master -Query 'sp_LogHunter'  -AppendServerInstance -MessagesToOutput -QueryTimeout 500
+}
+$results | Out-GridView
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="localhost:1401..."
+localhost:1401...
+PS>ParameterBinding(Out-Default): name="InputObject"; value="localhost:1402..."
+localhost:1402...
+PS>ParameterBinding(Out-Default): name="InputObject"; value="localhost:1403..."
+localhost:1403...
+PS>ParameterBinding(Out-Default): name="InputObject"; value="localhost:1404..."
+localhost:1404...
+[48;5;m0176CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:19.719184807:32:09 PM
+
+>
+PS>#4b parallel sp_LogHunter runs (Important Error Log Messages From SQL Server Instances)
+#   using PoshRSJob module
+Write-Output "`$instances count`: $($instances.count)"
+
+Get-RSJob | Stop-RSJob; Get-RSJob | Remove-RSJob # stop & remove any existing jobs
+
+### 
+$numberParallelThreads = 4
+
+$resultsLogHunter = Start-RSJob -Throttle $numberParallelThreads -ModulesToImport dbatools -InputObject $instances <# -Verbose #> -ScriptBlock { 
+
+    $sqlCred = BetterCredentials\Get-Credential sa
+    <# Set certs to be trusted #>Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true
+
+    $sqlInstance = $_
+    $database = 'master'
+    Write-Verbose "$sqlInstance..."
+    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $database -Query "
+       EXEC sp_LogHunter @first_log_only = 1
+" `
+    -SqlCredential $sqlCred -AppendServerInstance -MessagesToOutput
+
+
+} | Wait-RSJob -ShowProgress <#-Verbose#> | Receive-RSJob <#-Verbose#>; 
+
+Write-Output "$(($resultsGenPseudoErrors).count) results"
+$resultsLogHunter | Out-GridView
+Get-Date -Format o
+
+
+# sp_LogHunter - written by Erik Darling https://github.com/erikdarlingdata/DarlingData/blob/main/sp_LogHunter/sp_LogHunter.sql
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="$instances count: 4"
+$instances count: 4
+PS>ParameterBinding(Out-Default): name="InputObject"; value="4 results"
+4 results
+PS>ParameterBinding(Out-Default): name="InputObject"; value="2024-04-16T19:35:20.0207464-04:00"
+2024-04-16T19:35:20.0207464-04:00
+[48;5;m0177CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:16.344801807:35:20 PM
+
+>
+PS>#4b parallel sp_LogHunter runs (Important Error Log Messages From SQL Server Instances)
+#   using PoshRSJob module
+Write-Output "`$instances count`: $($instances.count)"
+
+Get-RSJob | Stop-RSJob; Get-RSJob | Remove-RSJob # stop & remove any existing jobs
+
+### 
+$numberParallelThreads = 4
+
+$resultsLogHunter = Start-RSJob -Throttle $numberParallelThreads -ModulesToImport dbatools -InputObject $instances <# -Verbose #> -ScriptBlock { 
+
+    $sqlCred = BetterCredentials\Get-Credential sa
+    <# Set certs to be trusted #>Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true
+
+    $sqlInstance = $_
+    $database = 'master'
+    Write-Verbose "$sqlInstance..."
+    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $database -Query "
+       EXEC sp_LogHunter @first_log_only = 1
+" `
+    -SqlCredential $sqlCred -AppendServerInstance -MessagesToOutput
+
+
+} | Wait-RSJob -ShowProgress <#-Verbose#> | Receive-RSJob <#-Verbose#>; 
+
+Write-Output "$(($resultsGenPseudoErrors).count) results"
+$resultsLogHunter | Out-GridView
+Get-Date -Format o
+
+
+# sp_LogHunter - written by Erik Darling https://github.com/erikdarlingdata/DarlingData/blob/main/sp_LogHunter/sp_LogHunter.sql
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="$instances count: 4"
+$instances count: 4
+PS>ParameterBinding(Out-Default): name="InputObject"; value="4 results"
+4 results
+PS>ParameterBinding(Out-Default): name="InputObject"; value="2024-04-16T19:37:13.3478032-04:00"
+2024-04-16T19:37:13.3478032-04:00
+[48;5;m0178CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:15.936878307:37:13 PM
+
+>
+PS>$results = $resultsLogHunter
+>> CommandInvocation(Out-Default): "Out-Default"
+[48;5;m0179CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.014813907:38:52 PM
+
+>
+PS>Write-Output "`$results.Count: $($results.Count)"
+
+$fileDescription = 'Error50000'
+$worksheetName = $fileDescription.replace('_','')
+$filenameExcel = ("$env:USERPROFILE\Documents\" + [string](Get-Date -format "yyyy-MM-dd__HHmmss") + "_" + $fileDescription + ".xlsx" ); #assign $filename variable
+
+$paramHash = @{
+    Path              = $filenameExcel
+    WorksheetName     = $fileDescription.replace('_','')
+    TableName         = $fileDescription.replace('_','')
+    TableStyle        = 'Medium27'
+    AutoSize          = $True
+    IncludePivotTable = $True
+    PivotRows         = "SqlInstance"
+    PivotData         = @{LogDate = 'count'}
+    IncludePivotChart = $True
+    ChartType         = "PieExploded3D"
+    ShowCategory      = $True
+    ShowPercent       = $True
+}
+
+Write-Output "$(($results).count) records exported" 
+#multiple key sort #with one unique column(commented out uniqueness)
+
+# Module ImportExcel is required - thank you, Doug Finke!
+$excel = $results | Sort-Object -Property @{e={$_.SqlInstance}}, @{e={$_.LogDate}} <#@{e={$_.Text}} -Unique #>| Select-Object SqlInstance, LogDate, Text, Source | Export-Excel @paramHash -Verbose -PassThru
+#$results | Select SqlInstance, LogDate, Text, Source | Export-Excel @paramHash
+#$results | Select SqlInstance, LogDate, Text, Source | Out-GridView
+$sheet = $excel.workbook.worksheets[$($worksheetName)]
+$sheet.Column(2) | Set-ExcelRange -NFormat "yyyy-mm-dd hh:mm:ss.000" -AutoFit
+$excel.Save()
+$excel.Dispose()
+if(Test-Path $filenameExcel) { Write-Output "$filenameExcel exported"}
+>> CommandInvocation(Out-Default): "Out-Default"
+>> ParameterBinding(Out-Default): name="InputObject"; value="$results.Count: 87"
+$results.Count: 87
+PS>ParameterBinding(Out-Default): name="InputObject"; value="87 records exported"
+87 records exported
+VERBOSE: Adding worksheet 'Error50000'.
+VERBOSE: Cell '1:1' add header 'SqlInstance'
+VERBOSE: Cell '1:2' add header 'LogDate'
+VERBOSE: Cell '1:3' add header 'text'
+VERBOSE: Cell '1:4' add header 'Source'
+VERBOSE: Defined table 'Error50000' at A1:D88
+VERBOSE: Adding worksheet 'Error50000PivotTable'.
+VERBOSE: Auto-sized columns
+PS>ParameterBinding(Out-Default): name="InputObject"; value="C:\Users\UserName\Documents\2024-04-16__194113_Error50000.xlsx exported"
+C:\Users\UserName\Documents\2024-04-16__194113_Error50000.xlsx exported
+[48;5;m0180CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.674065207:41:13 PM
+
+>
+PS>ii $filenameExcel
+>> CommandInvocation(Out-Default): "Out-Default"
+[48;5;m0181CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.204752707:41:19 PM
+
+>
+PS>ii $filenameExcel
+>> CommandInvocation(Out-Default): "Out-Default"
+[48;5;m0182CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.109026907:41:38 PM
+
+>
+PS># larsra@[REDACTED]
+>> CommandInvocation(Out-Default): "Out-Default"
+[48;5;m0183CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.014321707:46:14 PM
+
+>
+PS># twitter/X   @nanoDBA
+>> CommandInvocation(Out-Default): "Out-Default"
+[48;5;m0184CParallel DBA Tasks from the Command Line Using PowerShell [98G00:00:00.014925307:46:47 PM
+
+>
+PS>Stop-Transcript
+>> CommandInvocation(Out-Default): "Out-Default"
+**********************
+PowerShell transcript end
+End time: 20240416194700
+**********************

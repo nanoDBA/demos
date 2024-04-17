@@ -1,0 +1,329 @@
+"Duration","Success","Output","OutputCount","OutputSource","OutputSourceCount","Error","ErrorCount","OutputTruncated","Id","CommandLine","ExecutionStatus","StartExecutionTime","EndExecutionTime"
+"00:00:02.1948593","True",,,,,,,"False","142"," docker rm --force $(docker ps -a -q) # FORCE REMOVE ALL CONTAINERS","Completed","2024-04-16 16:39:00","2024-04-16 16:39:02"
+"00:00:00.0969687","True",,,,,,,"False","143","cls","Completed","2024-04-16 18:31:36","2024-04-16 18:31:36"
+"00:00:00.0698955","True",,,,,,,"False","144","cls","Completed","2024-04-16 18:37:45","2024-04-16 18:37:45"
+"00:00:00.1053074","True",,,,,,,"False","145","ii .","Completed","2024-04-16 18:37:55","2024-04-16 18:37:55"
+"00:00:00.0629671","True",,,,,,,"False","146","cls","Completed","2024-04-16 18:43:34","2024-04-16 18:43:34"
+"00:00:00.1240492","False","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1","System.Management.Automation.PSObject[]","1","False","147",". .\Create-Containers.ps1 -numContainers 4","Completed","2024-04-16 18:48:50","2024-04-16 18:48:50"
+"00:00:00.1875917","False","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1","System.Management.Automation.PSObject[]","1","False","148","Stop-Transcript","Completed","2024-04-16 18:49:18","2024-04-16 18:49:18"
+"00:00:00.0329834","True","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","149","$TranscriptDescription = 'Parallel DBA Tasks from the Command Line Using PowerShell'
+$TranscriptPath =""$env:USERPROFILE\OneDrive\##Presentations\2024\Parallel DBA Tasks from the Command Line Using PowerShell\""+ ([string](Get-Date -format ""yyyy-MM-dd__HH-mm-ss"") + ""_"" + ""nanoDBA"" + ""_"" + $TranscriptDescription + "".txt"")
+Start-Transcript $TranscriptPath","Completed","2024-04-16 18:49:36","2024-04-16 18:49:36"
+"00:00:05.9490804","True",,,,,,,"False","150",". '.\#00 Create-Containers.ps1' -numContainers 4","Completed","2024-04-16 18:49:47","2024-04-16 18:49:52"
+"00:00:04.3025796","True","System.Management.Automation.PSObject[]","2","System.Management.Automation.Language.IScriptExtent[]","2",,,"False","151","<# #0 object creation RSJob vs PSJobs 
+https://learn-powershell.net/2015/03/31/introducing-poshrsjob-as-an-alternative-to-powershell-jobs/  
+#>
+Write-Verbose ""Begin RSJobs Test"" -Verbose
+$Test = 42
+(Measure-Command {
+    $results = 1..5|Start-RSJob -Name {""TEST_$($_)""} -ScriptBlock {
+        Param($Object)
+        $DebugPreference = 'Continue'
+        $PSBoundParameters.GetEnumerator() | ForEach {
+            Write-Debug $_
+        }
+        Write-Verbose ""Creating object"" -Verbose
+        New-Object PSObject -Property @{
+            Object=$Object
+            Test=$Using:Test
+        }
+    }
+}).TotalSeconds
+Write-Verbose ""End RSJobs Test"" -Verbose
+# Get-RSJob | Receive-RSJob
+
+Write-Verbose ""Begin PSJobs Test"" -Verbose
+$Test = 42
+(Measure-Command {
+    1..5 | ForEach {
+        Start-Job -Name ""TEST_$($_)"" -ScriptBlock {
+            Param($Object)
+            $DebugPreference = 'Continue'
+            $PSBoundParameters.GetEnumerator() | ForEach {
+                Write-Debug $_ # display the key-value pairs of the hashtable in the debug stream by using Write-Debug - example: DEBUG: Key = Object, Value = 1
+            }
+            Write-Verbose ""Creating object"" -Verbose
+            New-Object PSObject -Property @{
+                Object = $Object
+                Test   = $Using:Test
+            }
+        } -ArgumentList $_
+    }
+}).TotalSeconds
+Write-Verbose ""End PSJobs Test"" -Verbose
+# Get-Job | Receive-Job
+
+","Completed","2024-04-16 18:54:12","2024-04-16 18:54:16"
+"00:00:00.3431185","True","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","152","#0 object creation ForEach -Parallel
+Write-Verbose ""Begin ForEach-Parallel Test"" -Verbose
+$Test = 42
+
+(Measure-Command {
+    $results = 1..5 | ForEach-Object -Parallel {
+        # Using Invoke-Command instead of Start-Job to avoid the overhead of creating a new runspace
+        Invoke-Command -ScriptBlock {
+            param($Object, $TestValue) # $Object is the current pipeline object, $TestValue is the value of $using:Test
+            $DebugPreference = 'Continue'
+            Write-Debug ""Processing object $Object with test value $TestValue""
+            Write-Verbose ""Creating object"" -Verbose
+            New-Object PSObject @{
+                Object = $Object
+                Test   = $TestValue
+            }
+        } -ArgumentList $_, $using:Test
+    }
+}).TotalSeconds
+
+Write-Verbose ""End ForEach -Parallel Test"" -Verbose","Completed","2024-04-16 18:56:13","2024-04-16 18:56:14"
+"00:00:00.6912356","True","System.Management.Automation.PSObject[]","8","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","153","$instances = $contNames
+
+$results = foreach ($sqlInstance in $instances) {
+Get-DbaBuild -SqlInstance $sqlInstance
+}
+$results | Format-Table","Completed","2024-04-16 18:58:22","2024-04-16 18:58:23"
+"00:00:11.3884178","True","System.Management.Automation.PSObject[]","9","System.Management.Automation.Language.IScriptExtent[]","2",,,"False","154","#1a Get-DbaErrorLog serially for multiple instances
+$instances = $contNames
+$paramHash = @{
+
+After = (Get-Date).AddDays((-50) )
+# Text = ""A fatal error occurred while reading the input stream from the network. The session will be terminated (input error: 10054, output error: 0).""
+Text = ""build""
+#Text = ""err""
+}
+
+$results = foreach($sqlInstance in $instances) {
+
+   Get-DbaErrorLog @paramHash -SqlInstance $sqlInstance `
+}
+Write-Output ""`$results.Count: $($results.Count)""
+#multiple key sort #with one unique column(commented out uniqueness)
+$results | Sort-Object -Property @{e={$_.SqlInstance}}, @{e={$_.LogDate}} ` <#@{e={$_.Text}} -Unique #>
+ | Select-Object SqlInstance, LogDate, Text, Source `
+ | Format-Table -Wrap","Completed","2024-04-16 18:59:32","2024-04-16 18:59:44"
+"00:00:00.0222489","True","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","155","$sqlCred","Completed","2024-04-16 19:05:40","2024-04-16 19:05:40"
+"00:00:07.8113757","True","System.Management.Automation.PSObject[]","3","System.Management.Automation.Language.IScriptExtent[]","3",,,"False","156","#1b Get-DbaErrorLog in parallel for multiple instances
+$sqlInstances = $instances
+Write-Output ""`$instances count`: $($instances.count)""
+
+Get-RSJob | Stop-RSJob
+Get-RSJob | Remove-RSJob # clear out any existing jobs
+
+$numberParallelThreads = 4
+
+$results = Start-RSJob -Throttle $numberParallelThreads -ModulesToImport dbatools, BetterCredentials -InputObject $sqlInstances -ScriptBlock { 
+  Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true # Set certs to be trusted
+  $sqlCred = BetterCredentials\Get-Credential sa
+
+  $PSDefaultParameterValues['*-Dba*:SqlCredential'] = $sqlCred
+  $PSDefaultParameterValues['*-Dba*:SourceSqlCredential'] = $sqlCred
+  $PSDefaultParameterValues['*-Dba*:DestinationSqlCredential'] = $sqlCred
+
+  $sqlInstance = $_
+
+  $paramHash = @{
+    SqlInstance   = $sqlInstance
+    SqlCredential = $sqlCred
+    After         = (Get-Date).AddHours((-50))
+    Text          = ""build"" #""Error: 50000""
+  }
+
+  Get-DbaErrorLog @paramHash
+} | Wait-RSJob -ShowProgress | Receive-RSJob
+
+Write-Output ""`$results.Count: $($results.Count)""
+#multiple key sort #with one unique column(commented out uniqueness)
+$results | Sort-Object -Property @{e={$_.SqlInstance}}, @{e={$_.LogDate}} | Select-Object SqlInstance, LogDate, Text, Source | ogv #ft -Wrap
+Get-Date -Format o","Completed","2024-04-16 19:13:54","2024-04-16 19:14:01"
+"00:00:00.0196079","True","System.Management.Automation.PSObject[]","4","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","157","$sqlInstances","Completed","2024-04-16 19:14:50","2024-04-16 19:14:50"
+"00:00:00.0697831","True","System.Management.Automation.PSObject[]","7","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","158","Get-Job","Completed","2024-04-16 19:17:23","2024-04-16 19:17:24"
+"00:00:00.0249236","True","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","159","Get-Job 91","Completed","2024-04-16 19:17:40","2024-04-16 19:17:40"
+"00:00:00.0362180","True","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","160","Get-Job 91 | Receive-Job","Completed","2024-04-16 19:17:54","2024-04-16 19:17:54"
+"00:00:00.0365862","True",,,,,,,"False","161","Get-Job 91 | Stop-Job","Completed","2024-04-16 19:19:49","2024-04-16 19:19:49"
+"00:00:00.0302241","True","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","162","Get-Job 91","Completed","2024-04-16 19:19:53","2024-04-16 19:19:53"
+"00:00:00.0210624","True",,,,,,,"False","163","Get-Job 91 | Remove-Job","Completed","2024-04-16 19:20:01","2024-04-16 19:20:01"
+"00:00:00.3486246","False","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1","System.Management.Automation.PSObject[]","1","False","164","Get-Job 91","Completed","2024-04-16 19:20:03","2024-04-16 19:20:04"
+"00:00:00.0516744","True","System.Management.Automation.PSObject[]","6","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","165","Get-Job","Completed","2024-04-16 19:20:08","2024-04-16 19:20:08"
+"00:00:00.0166375","True","System.Management.Automation.PSObject[]","4","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","166","$sqlInstances","Completed","2024-04-16 19:23:23","2024-04-16 19:23:23"
+"00:00:00.0135173","True","System.Management.Automation.PSObject[]","4","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","167","$instances","Completed","2024-04-16 19:23:28","2024-04-16 19:23:28"
+"00:00:08.8663376","True","System.Management.Automation.PSObject[]","8","System.Management.Automation.Language.IScriptExtent[]","2",,,"False","168","<# #3a Restore DB serially  #> $instances | ForEach { Restore-DbaDatabase -SqlInstance $_ -Path /tmp/backup/pubs.bak } `
+| Format-Table ","Completed","2024-04-16 19:23:40","2024-04-16 19:23:49"
+"00:00:02.7596965","True","System.Management.Automation.PSObject[]","11","System.Management.Automation.Language.IScriptExtent[]","4",,,"False","169","# Drops parallel
+#   using PoshRSJob module
+Write-Output ""`$instances count`: $($instances.count)""
+
+Get-RSJob | Stop-RSJob; Get-RSJob | Remove-RSJob # stop & remove any existing jobs
+
+### 
+$numberParallelThreads = 4
+
+$resultsDrops = Start-RSJob -Throttle $numberParallelThreads -ModulesToImport dbatools -InputObject $instances -Verbose -ScriptBlock { 
+
+    $sqlCred = BetterCredentials\Get-Credential sa
+    <# Set certs to be trusted #>Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true
+
+    $sqlInstance = $_
+    $database = 'master'
+    Write-Verbose ""$sqlInstance...""
+    Remove-DbaDatabase -SqlInstance $_ -Database pubs -Confirm:$false `
+    -SqlCredential $sqlCred -Verbose
+
+} | Wait-RSJob -ShowProgress <#-Verbose#> | Receive-RSJob <#-Verbose#>
+
+Write-Output ""$(($resultsGenPseudoErrors).count) results""
+$resultsDrops | Format-Table
+Get-Date -Format o","Completed","2024-04-16 19:24:09","2024-04-16 19:24:12"
+"00:00:00.1076135","True","System.Management.Automation.PSObject[]","4","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","170","Get-RSJob","Completed","2024-04-16 19:25:44","2024-04-16 19:25:44"
+"00:00:00.0496434","True","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","171","Get-RSJob 97 | Receive-RSJob","Completed","2024-04-16 19:26:16","2024-04-16 19:26:16"
+"00:00:05.1203877","True","System.Management.Automation.PSObject[]","11","System.Management.Automation.Language.IScriptExtent[]","4",,,"False","172","## 3b # Restores parallel
+     #  using PoshRSJob module
+Write-Output ""`$instances count`: $($instances.count)""
+
+Get-RSJob | Stop-RSJob
+Get-RSJob | Remove-RSJob # stop & remove any existing jobs
+
+### 
+$numberParallelThreads = 4
+
+$resultsRestore = Start-RSJob -Throttle $numberParallelThreads -ModulesToImport dbatools -InputObject $instances <#-Verbose#> -ScriptBlock { 
+
+    $sqlCred = BetterCredentials\Get-Credential sa
+    <# Set certs to be trusted #>Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true
+
+    $sqlInstance = $_
+    $database = 'master'
+    Write-Verbose ""$sqlInstance...""
+    Restore-DbaDatabase -SqlInstance $sqlInstance `
+    -SqlCredential $sqlCred `
+    -Path /tmp/backup/pubs.bak #-Verbose
+
+} | Wait-RSJob -ShowProgress <#-Verbose#> | Receive-RSJob <#-Verbose#>
+
+Write-Output ""$(($resultsGenPseudoErrors).count) results""
+$resultsRestore | Format-Table
+Get-Date -Format o","Completed","2024-04-16 19:28:58","2024-04-16 19:29:03"
+"00:00:00.5164755","True","System.Management.Automation.PSObject[]","4","System.Management.Automation.Language.IScriptExtent[]","1","System.Management.Automation.PSObject[]","8","False","173","#4a sequential sp_LogHunter runs
+
+$results = @(); foreach ($inst in $instances) {
+
+    Write-Output ""$inst...""
+    $results += Invoke-DbaQuery -SqlInstance $inst -Database master -Query 'sp_LogHunter'  -AppendServerInstance -MessagesToOutput -QueryTimeout 500
+}
+$results | Out-GridView","Completed","2024-04-16 19:31:17","2024-04-16 19:31:17"
+"00:00:00.8995442","True","System.Management.Automation.PSObject[]","4","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","174","$instances = $contNames
+foreach ($inst in $instances) {
+    Write-Output ""Creating stored proc sp_LogHunter on $inst...""
+   $sp_LogHunterPath = ""$env:USERPROFILE\downloads\Repos\DarlingData\sp_LogHunter\sp_LogHunter.sql""
+   Invoke-DbaQuery -SqlInstance $inst -Database master -InputFile $sp_LogHunterPath  -AppendServerInstance -MessagesToOutput -QueryTimeout 500
+}","Completed","2024-04-16 19:31:45","2024-04-16 19:31:46"
+"00:00:19.7191848","True","System.Management.Automation.PSObject[]","4","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","175","#4a sequential sp_LogHunter runs
+
+$results = @(); foreach ($inst in $instances) {
+
+    Write-Output ""$inst...""
+    $results += Invoke-DbaQuery -SqlInstance $inst -Database master -Query 'sp_LogHunter'  -AppendServerInstance -MessagesToOutput -QueryTimeout 500
+}
+$results | Out-GridView","Completed","2024-04-16 19:31:49","2024-04-16 19:32:09"
+"00:00:16.3448018","True","System.Management.Automation.PSObject[]","3","System.Management.Automation.Language.IScriptExtent[]","3",,,"False","176","#4b parallel sp_LogHunter runs (Important Error Log Messages From SQL Server Instances)
+#   using PoshRSJob module
+Write-Output ""`$instances count`: $($instances.count)""
+
+Get-RSJob | Stop-RSJob; Get-RSJob | Remove-RSJob # stop & remove any existing jobs
+
+### 
+$numberParallelThreads = 4
+
+$resultsLogHunter = Start-RSJob -Throttle $numberParallelThreads -ModulesToImport dbatools -InputObject $instances <# -Verbose #> -ScriptBlock { 
+
+    $sqlCred = BetterCredentials\Get-Credential sa
+    <# Set certs to be trusted #>Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true
+
+    $sqlInstance = $_
+    $database = 'master'
+    Write-Verbose ""$sqlInstance...""
+    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $database -Query ""
+       EXEC sp_LogHunter @first_log_only = 1
+"" `
+    -SqlCredential $sqlCred -AppendServerInstance -MessagesToOutput
+
+
+} | Wait-RSJob -ShowProgress <#-Verbose#> | Receive-RSJob <#-Verbose#>; 
+
+Write-Output ""$(($resultsGenPseudoErrors).count) results""
+$resultsLogHunter | Out-GridView
+Get-Date -Format o
+
+
+# sp_LogHunter - written by Erik Darling https://github.com/erikdarlingdata/DarlingData/blob/main/sp_LogHunter/sp_LogHunter.sql","Completed","2024-04-16 19:35:03","2024-04-16 19:35:20"
+"00:00:15.9368783","True","System.Management.Automation.PSObject[]","3","System.Management.Automation.Language.IScriptExtent[]","3",,,"False","177","#4b parallel sp_LogHunter runs (Important Error Log Messages From SQL Server Instances)
+#   using PoshRSJob module
+Write-Output ""`$instances count`: $($instances.count)""
+
+Get-RSJob | Stop-RSJob; Get-RSJob | Remove-RSJob # stop & remove any existing jobs
+
+### 
+$numberParallelThreads = 4
+
+$resultsLogHunter = Start-RSJob -Throttle $numberParallelThreads -ModulesToImport dbatools -InputObject $instances <# -Verbose #> -ScriptBlock { 
+
+    $sqlCred = BetterCredentials\Get-Credential sa
+    <# Set certs to be trusted #>Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true
+
+    $sqlInstance = $_
+    $database = 'master'
+    Write-Verbose ""$sqlInstance...""
+    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $database -Query ""
+       EXEC sp_LogHunter @first_log_only = 1
+"" `
+    -SqlCredential $sqlCred -AppendServerInstance -MessagesToOutput
+
+
+} | Wait-RSJob -ShowProgress <#-Verbose#> | Receive-RSJob <#-Verbose#>; 
+
+Write-Output ""$(($resultsGenPseudoErrors).count) results""
+$resultsLogHunter | Out-GridView
+Get-Date -Format o
+
+
+# sp_LogHunter - written by Erik Darling https://github.com/erikdarlingdata/DarlingData/blob/main/sp_LogHunter/sp_LogHunter.sql","Completed","2024-04-16 19:36:57","2024-04-16 19:37:13"
+"00:00:00.0148139","True",,,,,,,"False","178","$results = $resultsLogHunter","Completed","2024-04-16 19:38:52","2024-04-16 19:38:52"
+"00:00:00.6740652","True","System.Management.Automation.PSObject[]","3","System.Management.Automation.Language.IScriptExtent[]","3",,,"False","179","Write-Output ""`$results.Count: $($results.Count)""
+
+$fileDescription = 'Error50000'
+$worksheetName = $fileDescription.replace('_','')
+$filenameExcel = (""$env:USERPROFILE\Documents\"" + [string](Get-Date -format ""yyyy-MM-dd__HHmmss"") + ""_"" + $fileDescription + "".xlsx"" ); #assign $filename variable
+
+$paramHash = @{
+    Path              = $filenameExcel
+    WorksheetName     = $fileDescription.replace('_','')
+    TableName         = $fileDescription.replace('_','')
+    TableStyle        = 'Medium27'
+    AutoSize          = $True
+    IncludePivotTable = $True
+    PivotRows         = ""SqlInstance""
+    PivotData         = @{LogDate = 'count'}
+    IncludePivotChart = $True
+    ChartType         = ""PieExploded3D""
+    ShowCategory      = $True
+    ShowPercent       = $True
+}
+
+Write-Output ""$(($results).count) records exported"" 
+#multiple key sort #with one unique column(commented out uniqueness)
+
+# Module ImportExcel is required - thank you, Doug Finke!
+$excel = $results | Sort-Object -Property @{e={$_.SqlInstance}}, @{e={$_.LogDate}} <#@{e={$_.Text}} -Unique #>| Select-Object SqlInstance, LogDate, Text, Source | Export-Excel @paramHash -Verbose -PassThru
+#$results | Select SqlInstance, LogDate, Text, Source | Export-Excel @paramHash
+#$results | Select SqlInstance, LogDate, Text, Source | Out-GridView
+$sheet = $excel.workbook.worksheets[$($worksheetName)]
+$sheet.Column(2) | Set-ExcelRange -NFormat ""yyyy-mm-dd hh:mm:ss.000"" -AutoFit
+$excel.Save()
+$excel.Dispose()
+if(Test-Path $filenameExcel) { Write-Output ""$filenameExcel exported""}","Completed","2024-04-16 19:41:13","2024-04-16 19:41:13"
+"00:00:00.2047527","True",,,,,,,"False","180","ii $filenameExcel","Completed","2024-04-16 19:41:19","2024-04-16 19:41:19"
+"00:00:00.1090269","True",,,,,,,"False","181","ii $filenameExcel","Completed","2024-04-16 19:41:37","2024-04-16 19:41:37"
+"00:00:00.0143217","True",,,,,,,"False","182","# larsra@[REDACTED]","Completed","2024-04-16 19:46:13","2024-04-16 19:46:13"
+"00:00:00.0149253","True",,,,,,,"False","183","# twitter/X   @nanoDBA","Completed","2024-04-16 19:46:47","2024-04-16 19:46:47"
+"00:00:00.1353314","True","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","184","Stop-Transcript","Completed","2024-04-16 19:47:00","2024-04-16 19:47:00"
+"00:00:00.0182243","True","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1",,,"False","185","$TranscriptPath","Completed","2024-04-16 19:47:10","2024-04-16 19:47:10"
+"00:00:00.1313915","False","System.Management.Automation.PSObject[]","1","System.Management.Automation.Language.IScriptExtent[]","1","System.Management.Automation.PSObject[]","1","False","186","ii split-path ($TranscriptPath)","Completed","2024-04-16 19:47:36","2024-04-16 19:47:37"
+"00:00:00.0800953","True",,,,,,,"False","187","ii (split-path $TranscriptPath)","Completed","2024-04-16 19:49:44","2024-04-16 19:49:44"
